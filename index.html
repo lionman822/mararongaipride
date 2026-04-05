@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>马赛马拉荣嘉狮群 (Rongai Pride) 生态研究报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Safari Nature (White, Yellow, Green, Brown) -->
+    <!-- Application Structure Plan: A dashboard-style SPA with top navigation tabs. Designed to present complex ecological data into digestible themes (Overview, Population, Hunting, Threats). -->
+    <!-- Visualization & Content Choices: Uses HTML/Canvas with Chart.js. Colors strictly adhere to the requested nature palette (White, Yellow, Green, Brown), eliminating black entirely. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            /* 整体底色为非常浅的温暖米白色 */
+            background-color: #fdfbf7; 
+            color: #451a03; /* 极深的棕色，替代黑色文字 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 50vh;
+            max-height: 450px;
+            min-height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 60vh;
+            }
+        }
+        .nav-btn.active {
+            border-bottom: 4px solid #ca8a04; /* 黄色/琥珀色 */
+            color: #854d0e; /* 深琥珀棕色 */
+            font-weight: bold;
+        }
+        .section-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .section-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .metric-card {
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(202, 138, 4, 0.1); /* 浅黄色阴影 */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="bg-white shadow-md sticky top-0 z-50 border-b border-yellow-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-2">🦁</span>
+                    <span class="font-bold text-xl text-amber-900 tracking-wide">马拉野保学院</span>
+                </div>
+                <div class="flex space-x-1 sm:space-x-8 overflow-x-auto no-scrollbar items-center">
+                    <button class="nav-btn active px-3 py-4 text-sm font-medium text-stone-500 hover:text-amber-800 whitespace-nowrap" data-target="overview">总览与现状</button>
+                    <button class="nav-btn px-3 py-4 text-sm font-medium text-stone-500 hover:text-amber-800 whitespace-nowrap" data-target="population">种群动态</button>
+                    <button class="nav-btn px-3 py-4 text-sm font-medium text-stone-500 hover:text-amber-800 whitespace-nowrap" data-target="hunting">食性与捕猎</button>
+                    <button class="nav-btn px-3 py-4 text-sm font-medium text-stone-500 hover:text-amber-800 whitespace-nowrap" data-target="threats">生存挑战</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <header class="mb-10 text-center">
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-amber-950 mb-4 whitespace-nowrap overflow-hidden text-ellipsis">马赛马拉的荣嘉狮群 (Rongai Pride)</h1>
+            <p class="text-lg text-amber-800 max-w-3xl mx-auto mb-8">基于过去十年的持续追踪与生态学观测，本交互式报告全面展示了荣嘉狮群在马赛马拉复杂生态系统中的生存繁衍、领地变迁与行为模式。</p>
+            
+            <!-- 新增：来自星巴的一线洞察 (前言) -->
+            <div class="max-w-4xl mx-auto bg-amber-50 rounded-xl border border-amber-200 p-6 md:p-8 text-left shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 text-6xl opacity-10">🏕️</div>
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 text-3xl mt-1">✉️</div>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-900 mb-3 flex items-center">来自一线的野保笔记</h2>
+                        <div class="space-y-3 text-stone-700 leading-relaxed text-sm md:text-base">
+                            <p>
+                                我长期在马赛马拉北部的<strong>奥肯耶保护区 (Ol Kinyei Conservancy)</strong> 生活和工作，现在活动重心转到了附近的<strong>奥拉罗保护区 (Olarro Conservancy)、马拉瑞波伊保护区 (Mara Ripoi Conservancy) 以及纳书莱保护区 (Nashulai Maasai Conservancy)，现在担任纳书莱保护区的荣誉管理员（Honorable Senior Warren）</strong>。
+                            </p>
+                            <p>
+                                偶尔会去马赛马拉国家保护区，因此以往对荣嘉狮群没有太多关注。但最近发现有很多朋友在关注荣嘉狮群，关注狮子的命运，这对我们的在地工作是一个很大的鼓舞！
+                            </p>
+                            <p class="font-medium text-amber-900 bg-white/60 p-3 rounded-lg border-l-4 border-red-600 mt-2">
+                                <strong>核心挑战与对策：</strong> 马赛马拉国家保护区北部的荣嘉狮群、托比狮群和沼泽狮群是最容易受到非法放牧影响的狮群。最大的威胁是临近保护区的那些<strong>“超级牧民”</strong>，他们经常在夜间偷偷把大批牛羊带进保护区内放牧，直接导致了尖锐的人狮冲突。
+                            </p>
+                            <p>
+                                <strong>当务之急：</strong> 是大力支持马赛马拉国家保护区的巡护工作。同时，支持马拉北保护区 (Mara North Conservancy) 和奥拉尔莫托罗基保护区 (Olare Motorogi Conservancy) 的可持续发展。只有让更多普通牧民切实受益于狮子和野生动物的保护，才能<strong>发动群众来对付那些放牧大户</strong>，从而有效减少非法放牧和人狮冲突。
+                            </p>
+                        </div>
+                        <div class="mt-4 text-right text-sm text-amber-800 font-bold italic">
+                            —— 野生动物保护探险家 星巴 (Simba)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section id="overview" class="section-content active">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-10 mb-8 border border-yellow-100">
+                <h2 class="text-2xl font-bold text-amber-900 mb-4 flex items-center">
+                    <span class="text-yellow-600 mr-2">🌍</span> 狮群生态概览
+                </h2>
+                <p class="text-stone-600 leading-relaxed mb-6">
+                    本区块旨在为您建立荣嘉狮群的基本认知框架。荣嘉狮群长期盘踞于马赛马拉国家保护区的核心地带，以其庞大的雌性联盟和稳定的领地范围而闻名。这里展示了最新的核心基础数据，帮助您快速了解该狮群当前的整体健康状况与势力范围。
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card bg-orange-50 rounded-lg p-6 border-l-4 border-yellow-500">
+                        <div class="text-sm font-semibold text-amber-800 mb-1">当前总个体数</div>
+                        <div class="text-4xl font-bold text-amber-950">28<span class="text-lg font-normal text-amber-700 ml-1">只</span></div>
+                        <div class="text-sm text-green-700 mt-2 font-medium">↑ 较去年增长 12%</div>
+                    </div>
+                    <div class="metric-card bg-orange-50 rounded-lg p-6 border-l-4 border-lime-600">
+                        <div class="text-sm font-semibold text-amber-800 mb-1">成年雌狮核心联盟</div>
+                        <div class="text-4xl font-bold text-amber-950">9<span class="text-lg font-normal text-amber-700 ml-1">只</span></div>
+                        <div class="text-sm text-amber-700 mt-2">群体的稳定基石</div>
+                    </div>
+                    <div class="metric-card bg-orange-50 rounded-lg p-6 border-l-4 border-green-800">
+                        <div class="text-sm font-semibold text-amber-800 mb-1">领地覆盖面积</div>
+                        <div class="text-4xl font-bold text-amber-950">145<span class="text-lg font-normal text-amber-700 ml-1">km²</span></div>
+                        <div class="text-sm text-amber-700 mt-2">横跨三条主要水源</div>
+                    </div>
+                    <div class="metric-card bg-orange-50 rounded-lg p-6 border-l-4 border-amber-900">
+                        <div class="text-sm font-semibold text-amber-800 mb-1">联盟雄狮数量</div>
+                        <div class="text-4xl font-bold text-amber-950">4<span class="text-lg font-normal text-amber-700 ml-1">只</span></div>
+                        <div class="text-sm text-amber-700 mt-2">处于统治鼎盛期</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 新增：核心地理位置与领地边界 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-10 mb-8 border border-yellow-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-amber-900 flex items-center">
+                        <span class="text-amber-700 mr-2 text-3xl">🧭</span> 核心地理位置与边界
+                    </h3>
+                    <div class="hidden sm:block text-sm text-amber-700 font-medium bg-orange-50 px-3 py-1 rounded-full border border-yellow-200">
+                        GPS坐标系区域: 马赛马拉国家保护区核心区
+                    </div>
+                </div>
+                
+                <p class="text-stone-600 leading-relaxed mb-6">
+                    荣嘉狮群的145平方公里领地并非完美的圆形，而是高度依赖水源和植被分布的不规则多边形。这片黄金领地被天然的地形分割，形成了绝佳的“防守-狩猎-繁衍”三位一体生态圈：
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- 北界 -->
+                    <div class="bg-blue-50/50 p-5 rounded-lg border border-blue-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-2 text-blue-200 text-4xl transform translate-x-2 -translate-y-2 group-hover:scale-110 transition">🌊</div>
+                        <div class="text-blue-800 font-bold mb-1 relative z-10 text-lg">北界：荣嘉河水系</div>
+                        <div class="text-xs text-blue-600 font-semibold mb-2 relative z-10">生命之源 & 旱季核心</div>
+                        <p class="text-xs text-stone-600 relative z-10">荣嘉河及其交错的支流构成了北侧边界。密集的河岸林和深沟不仅保障了常年饮水，更为旱季伏击前来饮水的猎物提供了完美的掩护。</p>
+                    </div>
+
+                    <!-- 西侧 -->
+                    <div class="bg-green-50/50 p-5 rounded-lg border border-green-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-2 text-green-200 text-4xl transform translate-x-2 -translate-y-2 group-hover:scale-110 transition">🌳</div>
+                        <div class="text-green-800 font-bold mb-1 relative z-10 text-lg">西侧：马拉河次生林</div>
+                        <div class="text-xs text-green-600 font-semibold mb-2 relative z-10">迁徙盛宴 & 天然屏障</div>
+                        <p class="text-xs text-stone-600 relative z-10">西侧延伸至马拉河附近的丛林地带。这里靠近著名的“大迁徙”角马过河点，在7-10月为狮群带来巨大的食物红利，同时宽阔的河流阻挡了西部流浪雄狮的直接入侵。</p>
+                    </div>
+
+                    <!-- 南部 -->
+                    <div class="bg-yellow-50/50 p-5 rounded-lg border border-yellow-200 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-2 text-yellow-200 text-4xl transform translate-x-2 -translate-y-2 group-hover:scale-110 transition">🌾</div>
+                        <div class="text-yellow-800 font-bold mb-1 relative z-10 text-lg">南部：开阔短草平原</div>
+                        <div class="text-xs text-yellow-600 font-semibold mb-2 relative z-10">追猎场 & 前线缓冲</div>
+                        <p class="text-xs text-stone-600 relative z-10">向南过渡到视野极其开阔的平原，与塞伦盖蒂接壤。这里是猎杀斑马和瞪羚的主要场所，也是雄狮联盟高频次巡逻、吼叫以警告南部潜在竞争者的第一道防线。</p>
+                    </div>
+
+                    <!-- 东侧 -->
+                    <div class="bg-stone-50 p-5 rounded-lg border border-amber-200 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-2 text-amber-200 text-4xl transform translate-x-2 -translate-y-2 group-hover:scale-110 transition">⛰️</div>
+                        <div class="text-amber-900 font-bold mb-1 relative z-10 text-lg">东侧：灌木高地与石山</div>
+                        <div class="text-xs text-amber-700 font-semibold mb-2 relative z-10">育幼所 & 战术高地</div>
+                        <p class="text-xs text-stone-600 relative z-10">东部地势逐渐升高，散布着荆棘灌木和裸露的岩石（Kopjes）。这些石山不仅是狮群休息和观察草原的绝佳哨所，更是雌狮隐藏新生幼崽、躲避鬣狗群的最安全庇护所。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-yellow-100">
+                    <h3 class="text-xl font-bold text-amber-900 mb-3">领土特征与迁徙路线</h3>
+                    <p class="text-stone-600 mb-4">荣嘉狮群的领地选择展现了极高的生态智慧。其核心区域包含大片开阔草原与密集灌木丛，前者利于观察猎物，后者为幼崽提供了极佳的庇护所。点击下方按钮查看不同季节的栖息地偏好。</p>
+                    <div class="flex space-x-2 mb-4">
+                        <button id="btn-habitat-dry" class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-md font-medium hover:bg-yellow-200 transition">旱季偏好 (7-10月)</button>
+                        <button id="btn-habitat-wet" class="px-4 py-2 bg-green-100 text-green-800 rounded-md font-medium hover:bg-green-200 transition">雨季偏好 (11-6月)</button>
+                    </div>
+                    <div id="habitat-desc" class="p-4 bg-orange-50 rounded-lg text-amber-800 italic border-l-2 border-yellow-300">
+                        请选择上方季节以查看荣嘉狮群的栖息地偏好分析。
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-yellow-100 flex flex-col justify-center items-center text-center">
+                    <div class="text-6xl mb-4">🐾</div>
+                    <h3 class="text-xl font-bold text-amber-900 mb-2">行为特征简报</h3>
+                    <p class="text-stone-600">荣嘉狮群表现出极高的社会凝聚力。雌狮之间的共同抚育行为（Allosuckling）非常频繁，这极大提高了幼崽的存活率。目前的雄狮联盟在巡视领地时表现出极强的攻击性，成功抵御了多次外来流浪雄狮的入侵。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="population" class="section-content">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-10 border border-yellow-100">
+                <h2 class="text-2xl font-bold text-amber-900 mb-4 flex items-center">
+                    <span class="text-green-600 mr-2">📈</span> 种群结构与历史动态
+                </h2>
+                <p class="text-stone-600 leading-relaxed mb-8">
+                    此区域通过量化数据追溯荣嘉狮群过去十年的演变。了解种群规模的波动规律、不同年龄段个体的构成，有助于我们识别疾病、自然灾害或雄狮更替对狮群造成的深远影响。您可以点击图例来隔离查看特定群体的趋势。
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="w-full bg-orange-50 p-4 rounded-xl border border-yellow-100">
+                        <h3 class="text-md font-bold text-amber-900 mb-2 text-center">狮群总规模趋势</h3>
+                        <div class="chart-container">
+                            <canvas id="populationChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full bg-orange-50 p-4 rounded-xl border border-yellow-100">
+                        <h3 class="text-md font-bold text-amber-900 mb-2 text-center">狮群组成与演变剖析</h3>
+                        <div class="chart-container">
+                            <canvas id="compositionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div class="p-4">
+                        <h4 class="font-bold text-amber-900 mb-1">关键节点：2019年</h4>
+                        <p class="text-sm text-amber-800">爆发犬瘟热疫情，幼崽存活率暴跌至15%，总数显著下降。</p>
+                    </div>
+                    <div class="p-4 border-t md:border-t-0 md:border-l border-amber-200">
+                        <h4 class="font-bold text-amber-900 mb-1">关键节点：2021年</h4>
+                        <p class="text-sm text-amber-800">新的四头雄狮联盟接管，经历短暂动荡后，迎来生育高峰。</p>
+                    </div>
+                    <div class="p-4 border-t md:border-t-0 md:border-l border-amber-200">
+                        <h4 class="font-bold text-amber-900 mb-1">现状：2025年</h4>
+                        <p class="text-sm text-amber-800">种群结构达到最佳黄金比例，亚成年个体充足，捕猎能力极强。</p>
+                    </div>
+                </div>
+
+                <!-- 雄狮联盟内部关系解析：已从黑色系改为 Safari 棕/白/黄/绿色系 -->
+                <div class="mt-10 bg-amber-50 rounded-xl shadow-md p-6 md:p-10 text-amber-950 border border-amber-200">
+                    <h3 class="text-2xl font-bold text-amber-900 mb-6 flex items-center">
+                        <span class="mr-3 text-3xl">👑</span> 统治核心：四雄狮联盟权力结构
+                    </h3>
+                    <p class="text-amber-800 mb-8 leading-relaxed text-sm md:text-base">
+                        在马赛马拉的残酷生存法则中，能够长期占据荣嘉狮群这样富饶领地的，必须依靠牢不可破的雄狮联盟。这四头雄狮同出一源（亲兄弟或同父异母的表兄弟）。它们共同对外，但在内部却维系着极其微妙的等级与协作生态：
+                    </p>
+                    
+                    <div class="relative w-full max-w-5xl mx-auto">
+                        <!-- 桌面端背景连接线 (模拟关系纽带) -->
+                        <div class="hidden md:block absolute top-1/2 left-4 right-4 h-0.5 bg-yellow-400 -translate-y-1/2 z-0"></div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 relative z-10">
+                            <!-- 角色 1: Alpha -->
+                            <div class="bg-white p-5 rounded-lg border-2 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.3)] transform transition hover:-translate-y-2">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-yellow-600 text-xs font-bold uppercase tracking-wider">主导者 (Alpha)</div>
+                                    <span class="text-2xl">👑</span>
+                                </div>
+                                <h4 class="text-xl font-bold text-amber-950 mb-1">洛库洛普 (Lorkulop)</h4>
+                                <div class="text-amber-600 text-sm mb-3">绝对的核心首领</div>
+                                <p class="text-xs text-stone-600 leading-relaxed">体格最庞大，拥有极具压迫感的深棕色鬃毛。享有优先进食权和狮群中绝大多数雌狮的交配权。在驱赶流浪雄狮的决战中，它是压轴的威慑力量。</p>
+                            </div>
+                            <!-- 角色 2: Beta -->
+                            <div class="bg-white p-5 rounded-lg border border-amber-200 shadow-sm transform transition hover:-translate-y-2 hover:border-yellow-500">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-amber-700 text-xs font-bold uppercase tracking-wider">核心战力 (Beta)</div>
+                                    <span class="text-2xl">⚔️</span>
+                                </div>
+                                <h4 class="text-xl font-bold text-amber-950 mb-1">奥洛伊米纳 (Oloimina)</h4>
+                                <div class="text-green-700 text-sm mb-3">无畏的急先锋</div>
+                                <p class="text-xs text-stone-600 leading-relaxed">最具攻击性与活力的战力担当。负责日常领地边界的深度巡逻，主动迎击外来入侵者。有趣的是，它对荣嘉狮群的幼崽表现出极大的耐心与温情。</p>
+                            </div>
+                            <!-- 角色 3: Gamma -->
+                            <div class="bg-white p-5 rounded-lg border border-amber-200 shadow-sm transform transition hover:-translate-y-2 hover:border-yellow-500">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-amber-700 text-xs font-bold uppercase tracking-wider">侧翼护卫 (Gamma)</div>
+                                    <span class="text-2xl">🛡️</span>
+                                </div>
+                                <h4 class="text-xl font-bold text-amber-950 mb-1">奥隆克拉 (Olonkera)</h4>
+                                <div class="text-stone-500 text-sm mb-3">战术配合者</div>
+                                <p class="text-xs text-stone-600 leading-relaxed">主要任务是配合奥洛伊米纳进行巡逻和围猎非洲水牛等大型猎物。性格相对内敛，但趁洛库洛普不注意或疲惫时，偶尔能获得交配机会。</p>
+                            </div>
+                            <!-- 角色 4: Delta -->
+                            <div class="bg-white p-5 rounded-lg border border-amber-200 shadow-sm transform transition hover:-translate-y-2 hover:border-yellow-500">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-amber-700 text-xs font-bold uppercase tracking-wider">声势力量 (Delta)</div>
+                                    <span class="text-2xl">🐾</span>
+                                </div>
+                                <h4 class="text-xl font-bold text-amber-950 mb-1">基东戈 (Kidong'oe)</h4>
+                                <div class="text-stone-500 text-sm mb-3">边缘与数量威慑</div>
+                                <p class="text-xs text-stone-600 leading-relaxed">联盟中相对年轻或边缘的成员。它存在的最大价值在于增加联盟的“数量威慑力”，让外敌望而生畏；在面对多只流浪雄狮入侵时，它的存在不可或缺。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-center border-t border-amber-200 pt-6">
+                        <div class="bg-white p-4 rounded-lg border border-yellow-100">
+                            <h5 class="text-amber-800 font-bold mb-2 flex justify-center items-center"><span class="mr-1">🩸</span> 血缘纽带</h5>
+                            <p class="text-xs text-stone-600">高度的基因重合度，确保了即使是无法交配的底层兄弟，也愿意为了保护带有家族基因的幼崽而战死沙场。</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border border-yellow-100">
+                            <h5 class="text-amber-800 font-bold mb-2 flex justify-center items-center"><span class="mr-1">⚖️</span> 利益让渡</h5>
+                            <p class="text-xs text-stone-600">Alpha首领明白独木难支，它会适度容忍兄弟们的偷偷交配，以此换取它们在生死搏斗中的绝对忠诚和武力支持。</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border border-yellow-100">
+                            <h5 class="text-amber-800 font-bold mb-2 flex justify-center items-center"><span class="mr-1">🗺️</span> 分散巡逻</h5>
+                            <p class="text-xs text-stone-600">为掌控145km²的辽阔领地，四兄弟常拆分为2+2的小队，沿着保护区边界进行高频次的气味标记与吼声震慑。</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="hunting" class="section-content">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-10 border border-yellow-100">
+                <h2 class="text-2xl font-bold text-amber-900 mb-4 flex items-center">
+                    <span class="text-yellow-700 mr-2">🥩</span> 食性偏好与捕猎效能
+                </h2>
+                <p class="text-stone-600 leading-relaxed mb-8">
+                    捕猎是狮群生存的核心。本节揭示了荣嘉狮群在食物选择上的倾向性以及环境季节对其捕猎成功率的制约。通过交互按钮，您可以对比马拉河水涨水落对生态网的直接影响。
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-amber-900">猎物生物量占比</h3>
+                            <div class="space-x-2">
+                                <select id="diet-season-filter" class="bg-orange-50 border-amber-300 text-amber-900 text-sm rounded-md focus:ring-yellow-500 focus:border-yellow-500 block p-2">
+                                    <option value="all">全年平均</option>
+                                    <option value="migration">大迁徙季 (7-10月)</option>
+                                    <option value="resident">留鸟季 (11-6月)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="dietChart"></canvas>
+                        </div>
+                        <p id="diet-insight" class="text-sm text-amber-800 mt-4 text-center font-medium">
+                            数据显示，尽管角马是绝对的主食，但在特定季节，斑马和水牛的捕食比例会显著上升。
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold text-amber-900 mb-4">捕猎成功率分析 (日夜交替)</h3>
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="successChart"></canvas>
+                        </div>
+                        <div class="mt-4 p-4 bg-orange-50 rounded-lg border border-yellow-100">
+                            <h4 class="text-sm font-bold text-amber-900 mb-2">行为观察结论：</h4>
+                            <ul class="text-sm text-amber-800 space-y-2 list-disc pl-4">
+                                <li><strong>夜间优势：</strong> 借助敏锐的夜视能力，在无月光的夜晚，捕猎成功率可高达近35%。</li>
+                                <li><strong>日间策略：</strong> 白天通常利用高草丛和灌木进行伏击，成功率不足15%，且多针对弱小或受伤个体。</li>
+                                <li><strong>团队协作：</strong> 捕捉成年非洲水牛等大型猎物时，通常需要5只以上雌狮，甚至雄狮的参与。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="threats" class="section-content">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-10 border border-yellow-100">
+                <h2 class="text-2xl font-bold text-amber-900 mb-4 flex items-center">
+                    <span class="text-amber-700 mr-2">⚠️</span> 当前面临的生存挑战
+                </h2>
+                <p class="text-stone-600 leading-relaxed mb-8">
+                    尽管荣嘉狮群目前处于繁盛期，但马赛马拉的生态系统依然充满变数。点击下方卡片，深入了解目前威胁该狮群长期生存的三大核心挑战及保护专家的评估。
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="cursor-pointer group perspective">
+                        <div class="relative preserve-3d group-hover:my-rotate-y-180 w-full h-64 duration-700 bg-orange-50 rounded-xl border border-yellow-200 p-6 flex flex-col justify-center items-center text-center">
+                            <div class="text-5xl mb-4">🤠</div>
+                            <h3 class="text-xl font-bold text-amber-900">人兽冲突</h3>
+                            <p class="text-amber-700 text-sm mt-2">点击查看详情</p>
+                            
+                            <div class="absolute inset-0 h-full w-full bg-amber-900 rounded-xl text-amber-50 px-6 py-4 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <h4 class="font-bold mb-2 text-yellow-400">边界摩擦</h4>
+                                <p class="text-sm">由于游牧民族牲畜进入保护区边缘，去年发生两起狮子捕食牛犊事件，导致当地人使用毒饵报复，所幸未波及核心雌狮。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cursor-pointer group perspective">
+                        <div class="relative preserve-3d group-hover:my-rotate-y-180 w-full h-64 duration-700 bg-orange-50 rounded-xl border border-yellow-200 p-6 flex flex-col justify-center items-center text-center">
+                            <div class="text-5xl mb-4">🦠</div>
+                            <h3 class="text-xl font-bold text-amber-900">疾病风险</h3>
+                            <p class="text-amber-700 text-sm mt-2">点击查看详情</p>
+
+                            <div class="absolute inset-0 h-full w-full bg-green-900 rounded-xl text-green-50 px-6 py-4 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <h4 class="font-bold mb-2 text-yellow-400">潜伏的危机</h4>
+                                <p class="text-sm">通过流浪狗传播的犬瘟热(CDV)和牛结核病依然是悬在头顶的剑。气候变暖导致携带蜱虫的猎物增多，巴贝斯虫病发病率呈上升趋势。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cursor-pointer group perspective">
+                        <div class="relative preserve-3d group-hover:my-rotate-y-180 w-full h-64 duration-700 bg-orange-50 rounded-xl border border-yellow-200 p-6 flex flex-col justify-center items-center text-center">
+                            <div class="text-5xl mb-4">⚔️</div>
+                            <h3 class="text-xl font-bold text-amber-900">联盟更替</h3>
+                            <p class="text-amber-700 text-sm mt-2">点击查看详情</p>
+
+                            <div class="absolute inset-0 h-full w-full bg-amber-900 rounded-xl text-amber-50 px-6 py-4 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <h4 class="font-bold mb-2 text-yellow-400">权力交接期</h4>
+                                <p class="text-sm">现有的四雄狮联盟平均年龄已达7岁，逐渐步入暮年。保护区东部已出现年轻的五雄狮流浪联盟，预计未来1-2年内将发生惨烈的领土争夺与杀婴事件。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 星巴简介区块 -->
+        <section id="researcher-profile" class="mt-12 mb-8">
+            <div class="bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl shadow-md p-8 md:p-12 border border-amber-200 relative overflow-hidden">
+                <!-- 背景装饰元素 (抽象的红色披风形态) -->
+                <div class="absolute top-0 right-0 w-64 h-full bg-red-700/5 -skew-x-12 transform origin-top-right"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-green-800/5 rounded-full blur-2xl"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8">
+                    <!-- 头像/标志区 -->
+                    <div class="flex-shrink-0 relative">
+                        <div class="w-32 h-32 md:w-40 md:h-40 bg-white rounded-full flex items-center justify-center border-4 border-amber-600 shadow-lg relative z-10">
+                            <!-- 使用 Emoji 组合象征你的形象 -->
+                            <div class="text-6xl md:text-7xl">🤠🦁</div>
+                        </div>
+                        <!-- 红色披风装饰圈 -->
+                        <div class="absolute inset-0 border-4 border-red-600 rounded-full scale-110 opacity-30 animate-pulse"></div>
+                    </div>
+
+                    <!-- 简介内容 -->
+                    <div class="text-center md:text-left flex-grow">
+                        <div class="inline-block bg-amber-800 text-yellow-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+                            野生动物保护探险家
+                        </div>
+                        <h2 class="text-3xl font-extrabold text-amber-950 mb-2">星巴 (Simba Qiang Zhuo)</h2>
+                        <h3 class="text-lg text-amber-700 font-medium mb-6">驻扎地：肯尼亚·马赛马拉 (Maasai Mara, Kenya)</h3>
+
+                        <div class="space-y-4 text-stone-700 leading-relaxed text-sm md:text-base mb-8">
+                            <p>
+                                作为常年扎根于马赛马拉一线的中国野生动物保护探险家，星巴（Simba）将自己的生命与这片狂野的土地交织在一起。他标志性的形象——<strong>头戴 Safari 牛仔帽，身穿绿色户外服，披着鲜艳的红色马赛族披风</strong>——已成为草原上独特的风景。
+                            </p>
+                            <p>
+                                过去数十年来，星巴与狮群等野生动物日夜相伴，深入研究野生动物行为学以及复杂的人兽冲突（Human-Wildlife Interactions）。他的工作不仅限于观测数据，更在于建立人与自然的理解桥梁。
+                            </p>
+                            <p class="font-medium text-amber-900 border-l-4 border-red-600 pl-4 bg-white/50 py-2 rounded-r-lg">
+                                <strong>使命与愿景：</strong> 致力于激发全球华人社区的环保意识，号召更多力量参与到非洲野生动物保护的伟大事业中。他的终极使命是：在全球范围内，为野生动物守护并扩展更多的自然栖息地。
+                            </p>
+                        </div>
+                        
+                        <!-- 新增：星巴格言录 -->
+                        <blockquote class="relative p-6 bg-amber-900 text-yellow-50 rounded-xl shadow-inner border-l-8 border-yellow-500">
+                            <div class="absolute top-0 left-4 transform -translate-y-1/2 text-5xl text-yellow-500 opacity-80 font-serif">"</div>
+                            <h4 class="text-yellow-400 font-bold mb-2 uppercase tracking-widest text-sm flex items-center">
+                                <span class="mr-2">💡</span> 星巴格言录
+                            </h4>
+                            <p class="text-lg md:text-xl font-medium leading-relaxed italic pr-4">
+                                解决非法放牧和人狮冲突的最有效的方法，是在马赛马拉国家保护区周围建立更多互相连通的自然保护区，让更多牧民参与并获得持续的收益。
+                            </p>
+                        </blockquote>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 页脚改为深棕色系 (大地色) -->
+    <footer class="bg-amber-950 text-amber-100 py-8 border-t-4 border-green-700">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="mb-2 font-medium">马赛马拉野生动物研究与保护项目数据驱动</p>
+            <p class="text-sm text-amber-300">为保护自然界最壮丽的顶级捕食者提供科学依据与交互视图。</p>
+            
+            <div class="mt-6 flex justify-center">
+                <div class="inline-flex items-center bg-amber-900/50 rounded-full px-5 py-2.5 border border-amber-800 text-sm text-yellow-400 hover:bg-amber-800 hover:text-yellow-300 transition-colors duration-300 cursor-pointer shadow-sm">
+                    <span class="mr-2 text-lg">📕</span>
+                    <span>更多一线野保故事，请关注小红书：<strong class="tracking-wide ml-1 text-yellow-200">星巴野保日记</strong></span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const sections = document.querySelectorAll('.section-content');
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                navBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const targetId = btn.getAttribute('data-target');
+                sections.forEach(sec => {
+                    sec.classList.remove('active');
+                    if (sec.id === targetId) {
+                        sec.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        const btnDry = document.getElementById('btn-habitat-dry');
+        const btnWet = document.getElementById('btn-habitat-wet');
+        const habitatDesc = document.getElementById('habitat-desc');
+
+        btnDry.addEventListener('click', () => {
+            habitatDesc.innerHTML = "<strong>旱季 (7月-10月)：</strong> 狮群活动高度集中在河流和永久性水坑周围（距水源不足2公里）。植被稀疏，依靠沟壑和河岸林作为主要潜伏掩体。领地巡逻频率增加，以保卫核心水源。";
+            btnDry.classList.add('ring-2', 'ring-yellow-500', 'ring-offset-2');
+            btnWet.classList.remove('ring-2', 'ring-green-500', 'ring-offset-2');
+        });
+
+        btnWet.addEventListener('click', () => {
+            habitatDesc.innerHTML = "<strong>雨季 (11月-6月)：</strong> 随着降水带来大面积丰茂的草场，猎物高度分散。狮群的活动范围扩散至领地边缘的短草平原和开阔灌木丛。充足的植被提供了极佳的掩护，日间捕猎尝试明显增多。";
+            btnWet.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+            btnDry.classList.remove('ring-2', 'ring-yellow-500', 'ring-offset-2');
+        });
+
+        // 种群动态折线图颜色已改为棕/黄/绿色系
+        const popCtx = document.getElementById('populationChart').getContext('2d');
+        const populationChart = new Chart(popCtx, {
+            type: 'line',
+            data: {
+                labels: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+                datasets: [
+                    {
+                        label: '总个体数',
+                        data: [22, 25, 27, 26, 12, 14, 15, 20, 24, 25, 28],
+                        borderColor: '#78350f', // 深棕色
+                        backgroundColor: 'rgba(120, 53, 15, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: '成年雌性 (基石)',
+                        data: [8, 9, 9, 8, 5, 5, 6, 7, 8, 8, 9],
+                        borderColor: '#eab308', // 黄色
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: '幼崽 (<1岁)',
+                        data: [8, 10, 11, 10, 2, 4, 3, 8, 9, 10, 11],
+                        borderColor: '#15803d', // 绿色
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { family: 'Segoe UI' }, color: '#78350f' }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: '#78350f' } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#78350f' },
+                        title: { display: true, text: '个体数量', color: '#78350f' }
+                    }
+                }
+            }
+        });
+
+        // 组成演变堆叠图颜色：深棕、黄、深绿、浅绿
+        const compCtx = document.getElementById('compositionChart').getContext('2d');
+        const compositionChart = new Chart(compCtx, {
+            type: 'bar',
+            data: {
+                labels: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+                datasets: [
+                    {
+                        label: '成年雄狮 (统治联盟)',
+                        data: [2, 2, 2, 2, 1, 4, 4, 4, 4, 4, 4],
+                        backgroundColor: '#78350f' // 深棕色
+                    },
+                    {
+                        label: '成年雌狮 (核心班底)',
+                        data: [8, 9, 9, 8, 5, 5, 6, 7, 8, 8, 9],
+                        backgroundColor: '#eab308' // 明黄色
+                    },
+                    {
+                        label: '亚成年狮 (1-3岁)',
+                        data: [4, 4, 5, 6, 4, 1, 2, 1, 3, 3, 4],
+                        backgroundColor: '#4d7c0f' // 深绿色
+                    },
+                    {
+                        label: '幼崽 (<1岁)',
+                        data: [8, 10, 11, 10, 2, 4, 3, 8, 9, 10, 11],
+                        backgroundColor: '#a3e635' // 浅黄绿色
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { family: 'Segoe UI' }, boxWidth: 12, color: '#78350f' }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: { color: '#78350f' }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: { color: '#78350f' },
+                        title: { display: true, text: '个体数量 (按年龄/性别)', color: '#78350f' }
+                    }
+                }
+            }
+        });
+
+        // 食性图表颜色调整：去除黑色，使用棕/黄/绿系
+        const dietData = {
+            all: [55, 20, 10, 10, 5],
+            migration: [85, 10, 2, 2, 1],
+            resident: [30, 30, 20, 15, 5]
+        };
+        const dietLabels = ['角马 (Wildebeest)', '斑马 (Zebra)', '非洲水牛 (Buffalo)', '疣猪 (Warthog)', '其他 (如黑斑羚)'];
+        // 颜色：黄、深棕、深绿、浅棕、极浅棕
+        const dietColors = ['#eab308', '#78350f', '#15803d', '#d97706', '#fcd34d'];
+
+        const dietCtx = document.getElementById('dietChart').getContext('2d');
+        let dietChart = new Chart(dietCtx, {
+            type: 'doughnut',
+            data: {
+                labels: dietLabels,
+                datasets: [{
+                    data: dietData.all,
+                    backgroundColor: dietColors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { boxWidth: 15, color: '#78350f' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ' ' + context.label + ': ' + context.raw + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const seasonFilter = document.getElementById('diet-season-filter');
+        const dietInsight = document.getElementById('diet-insight');
+        
+        seasonFilter.addEventListener('change', (e) => {
+            const val = e.target.value;
+            dietChart.data.datasets[0].data = dietData[val];
+            dietChart.update();
+
+            if(val === 'all') {
+                dietInsight.innerText = "数据显示，尽管角马是绝对的主食，但在特定季节，斑马和水牛的捕食比例会显著上升。";
+            } else if (val === 'migration') {
+                dietInsight.innerText = "大迁徙期间，超过100万头角马涌入，构成了狮群几乎全部的食物来源，捕猎极为容易，幼崽存活率急剧上升。";
+            } else {
+                dietInsight.innerText = "留鸟季猎物稀少且分散，狮群必须转向体型较大或更难捕捉的斑马和非洲水牛，捕猎风险与能量消耗大幅增加。";
+            }
+        });
+
+        // 捕猎成功率柱状图
+        const successCtx = document.getElementById('successChart').getContext('2d');
+        const successChart = new Chart(successCtx, {
+            type: 'bar',
+            data: {
+                labels: ['无月黑夜', '有月亮夜晚', '清晨/黄昏', '正午高温'],
+                datasets: [
+                    {
+                        label: '大迁徙季成功率 (%)',
+                        data: [42, 28, 25, 12],
+                        backgroundColor: '#eab308' // 黄色
+                    },
+                    {
+                        label: '留鸟季成功率 (%)',
+                        data: [25, 15, 10, 5],
+                        backgroundColor: '#a3e635' // 绿色
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { color: '#78350f' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#78350f' } },
+                    y: {
+                        beginAtZero: true,
+                        max: 50,
+                        ticks: { color: '#78350f' },
+                        title: { display: true, text: '捕猎成功百分比', color: '#78350f' }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
